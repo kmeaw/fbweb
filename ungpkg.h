@@ -1,0 +1,2 @@
+void ungpkg(char* pkg);
+
