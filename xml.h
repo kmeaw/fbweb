@@ -14,7 +14,7 @@ template <class T> class XMLEntity {
   XMLEntity<T> *attributes;
   char *name;
 
-  XMLEntity<T>() : next(0), children(0), attributes(0) {}
+  XMLEntity<T>() : next(0), children(0), attributes(0), name(0) {}
   XMLEntity<T>(const char **data);
 
   XMLAttribute<T>* get(const char *name);
@@ -62,6 +62,7 @@ template <class T> class XMLText : public XMLEntity<T> {
   	: value(_value)
   {
     this->name = strdup(_name);
+    this->children = this->next = 0;
   }
 
   template <class T> 
@@ -126,7 +127,7 @@ template <class T> class XMLText : public XMLEntity<T> {
     XMLEntity<T> *last_child = NULL;
     XMLEntity<T> *last_attribute = NULL;
 
-    attributes = children = 0;
+    next = attributes = children = 0;
 
     while (**data != '<')
       (*data) ++;
@@ -144,6 +145,15 @@ template <class T> class XMLText : public XMLEntity<T> {
 
     while (**data && **data != '>')
     {
+      if (**data == '/')
+      {
+	while (**data && **data != '>')
+	  (*data) ++;
+	if (**data)
+	  (*data) ++;
+	return;
+      }
+
       XMLAttribute<T> *attr = new XMLAttribute<T>(data);
       if (last_attribute)
       {
