@@ -29,20 +29,44 @@ extern "C" {
 int W,H;
 FT_Library  library;
 FT_Face     face;
+uint32_t    addr;
+const char  *host;
 
 #include "get.h"
 #include "xml.h"
 #include "view.h"
 
+#ifdef __POWERPC__
 int main()
+#else
+int main(int argc, char **argv)
+#endif
 {
   bool pkg_installed = false;
 #if DEBUG
   debug_wait_for_client();
 #endif
 
+#ifdef __POWERPC__
+  addr = 0x4c490d03;
+  host = "pkg-distro.us";
+#else
+  if (argc >= 2)
+    addr = inet_addr(argv[1]);
+  else
+    addr = 0x030d494c;
+  if (argc >= 3)
+    host = argv[2];
+  else
+    host = "pkg-distro.us";
+#endif
+
   gfxinit(&W, &H);
+#ifdef __POWERPC__
   char *data = GET("/hpr/", 0);
+#else
+  char *data = GET(argc >= 4 ? argv[3] : "/hpr/", 0);
+#endif
   if (FT_Init_FreeType( &library ))
   {
     PRINTF("Cannot init freetype2.\n");

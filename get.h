@@ -8,17 +8,13 @@ char *GET(const char *path, size_t *outsz)
   memset(&servaddr, 0, sizeof(servaddr));
   // servaddr.sin_len = sizeof(servaddr);
   servaddr.sin_family = AF_INET;
-#if __POWERPC__
-  servaddr.sin_addr.s_addr = 0x4c490d03;
-#else
-  servaddr.sin_addr.s_addr = 0x030d494c;
-#endif
+  servaddr.sin_addr.s_addr = addr;
   servaddr.sin_port = htons(80);
   if (connect (sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) == -1)
   {
     return NULL;
   }
-  sprintf(buf, "GET %s HTTP/1.0\r\nHost: pkg-distro.us\r\n\r\n", path);
+  sprintf(buf, "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n", path, host);
   write(sock, buf, strlen(buf));
 
   ptr = buf;
