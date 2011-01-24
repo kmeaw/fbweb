@@ -62,6 +62,8 @@ void flip()
   SDL_Delay (10);
 }
 
+void copy() {}
+
 int getKey()
 {
   SDL_Event event;

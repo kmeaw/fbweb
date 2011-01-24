@@ -6,3 +6,4 @@ void waitFlip();
 void gfxinit(int *w, int *h);
 void rect(int x,int y,int w,int h,uint32_t color);
 int getKey();
+void copy();

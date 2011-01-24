@@ -1,3 +1,5 @@
 .*.sw[ponm]
 *.o
 main
+game
+srvdata.txt

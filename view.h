@@ -2,15 +2,15 @@
 #define _VIEW_H_
 
 #include "xml.h"
-#ifdef __POWERPC__
 extern "C" {
+#ifdef __POWERPC__
 #include <pngdec/pngdec.h>
 #include <pngdec/loadpng.h>
-}
 #else
 #include "pngdatas.h"
-extern "C" int LoadPNG(PngDatas *png, const char *filename);
+extern int LoadPNG(PngDatas *png, const char *filename);
 #endif
+}
 #include <string.h>
 #include <math.h>
 #include <stdint.h>

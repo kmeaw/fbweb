@@ -7,6 +7,12 @@
 // Thanks to Matt_P for his python debug unpacker
 //  (https://github.com/HACKERCHANNEL/PS3Py/blob/master/pkg.py)
 
+#ifdef __POWERPC__
+#include <psl1ght/lv2/filesystem.h>
+#else
+#define lv2FsChmod(a,b)
+#endif
+
 #include "pkgtypes.h"
 #include <stdio.h>
 #include <string.h>
@@ -14,12 +20,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include "debug.h"
+#include "sdl.h"
+extern int W, H;
 
 static u8 *pkg = NULL;
 static u64 size;
 static u64 offset;
+char *dir;
 
-#define fail(...)
+#define fail(s, ...) PRINTF("ungpkg failed: " s ".\n", __VA_ARGS__)
 
 // FIXME: use a non-broken sha1.c *sigh*
 #include "aes.h"
@@ -158,10 +168,11 @@ static void unpack_pkg(void)
 	u32 fname_off;
 	u64 file_offset;
 	u32 flags;
-	char fname[256];
+	char fname[512];
 	u8 *tmp;
 
 	n_files = be32(pkg + 0x14);
+	PRINTF("total %d files.\n", n_files);
 
 	for (i = 0; i < n_files; i++) {
 		tmp = pkg + offset + i*0x20;
@@ -176,16 +187,30 @@ static void unpack_pkg(void)
 			fail("filename too long: %s", pkg + fname_off);
 
 		memset(fname, 0, sizeof fname);
-		strncpy(fname, (char *)(pkg + fname_off), fname_len);
+		strcpy(fname, dir);
+		strcat(fname, "/");
+		strncpy(fname + strlen(fname), (char *)(pkg + fname_off), fname_len);
 
 		flags &= 0xff;
+		PRINTF("unpacking %lld/%lld: %s %d %lld [0x%llX]...\n", i + 1, n_files, fname, flags, size, file_offset);
 		if (flags == 4)
-			mkdir(fname, 0777);
+		{
+		  	PRINTF("mkdir(%s);\n", fname);
+			mkdir(fname, S_IRWXO | S_IRWXU | S_IRWXG | S_IFDIR);
+			lv2FsChmod(fname, 0777);
+		}
 		else if (flags == 1 || flags == 3)
 		{
+		  	PRINTF("fopen(%s);\n", fname);
+			lv2FsChmod(fname, 0666);
 		  	FILE *f = fopen(fname, "wb");
-			fwrite(pkg + file_offset, size, 1, f);
-			fclose (f);
+			if (f)
+			{
+			  fwrite(pkg + file_offset, size, 1, f);
+			  fclose (f);
+			}
+			else
+			  fail("fopen(%s) failed", fname);
 		}
 		else
 			fail("unknown flags: %08x", flags);
@@ -194,25 +219,38 @@ static void unpack_pkg(void)
 
 void ungpkg(u8* _pkg)
 {
-	char *dir;
 	pkg = _pkg;
 
-	dir = malloc(10);
-	memcpy(dir, pkg + 0x37, 9);
-	dir[9] = 0;
+	dir = malloc(30);
+#ifdef __POWERPC__
+	strcpy(dir, "/dev_hdd0/game/");
+#else
+	strcpy(dir, "./././././game/");
+#endif
+	memcpy(dir + 15, pkg + 0x37, 9);
+	dir[15 + 9] = 0;
+	PRINTF("Installing package %s...\n", dir);
 
-	mkdir(dir, 0777);
+	if (mkdir(dir, S_IRWXO | S_IRWXU | S_IRWXG | S_IFDIR))
+	  fail("mkdir(%s) failed", dir);
 
-	if (chdir(dir) != 0)
-		fail("chdir(%s)", dir);
+	lv2FsChmod(dir, 0777);
 
 	offset = be64(pkg + 0x20);
 	size = be64(pkg + 0x28);
 
 	if (be16(pkg + 0x04) & 0x8000)
+	{
 		decrypt_retail_pkg();
+		PRINTF("retail decrypted.\n");
+	}
 	else
+	{
 		decrypt_debug_pkg();
+		PRINTF("debug decrypted.\n");
+	}
 
 	unpack_pkg();
+
+	PRINTF("installed!\n");
 }

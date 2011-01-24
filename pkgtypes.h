@@ -6,10 +6,12 @@
 
 #include <stdint.h>
 
+#ifndef __POWERPC__
 typedef unsigned long long u64;
 typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
+#endif
 
 struct elf_phdr {
 	u32 p_type;
