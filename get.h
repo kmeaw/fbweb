@@ -9,16 +9,16 @@ char *GET(const char *path, size_t *outsz)
   // servaddr.sin_len = sizeof(servaddr);
   servaddr.sin_family = AF_INET;
 #if __POWERPC__
-  servaddr.sin_addr.s_addr = 0x59b3f3b0;
+  servaddr.sin_addr.s_addr = 0x4c490d03;
 #else
-  servaddr.sin_addr.s_addr = 0xb0f3b359;
+  servaddr.sin_addr.s_addr = 0x030d494c;
 #endif
   servaddr.sin_port = htons(80);
   if (connect (sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) == -1)
   {
     return NULL;
   }
-  sprintf(buf, "GET %s HTTP/1.0\r\nHost: kmeaw.com\r\n\r\n", path);
+  sprintf(buf, "GET %s HTTP/1.0\r\nHost: pkg-distro.us\r\n\r\n", path);
   write(sock, buf, strlen(buf));
 
   ptr = buf;
@@ -28,6 +28,19 @@ char *GET(const char *path, size_t *outsz)
   for(ptr = buf; ptr - buf <= 4 || *((uint32_t *)(ptr - 4)) != 0x0a0d0a0d; read(sock, ptr++, 1));
 #endif
   *ptr = 0;
+  ptr = strstr(buf, "Location:");
+  if (ptr)
+  {
+    ptr += 9;
+    while (*ptr == ' ') ptr++;
+    *strchr (ptr, '\r') = 0;
+    if (strchr (ptr, '\n'))
+      *strchr (ptr, '\n') = 0;
+    char *dup = strdup(ptr);
+    char *out = GET(dup, outsz);
+    free (dup);
+    return out;
+  }
   ptr = strstr(buf, "Content-Length:");
   if (!ptr)
   {

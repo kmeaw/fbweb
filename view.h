@@ -2,8 +2,15 @@
 #define _VIEW_H_
 
 #include "xml.h"
+#ifdef __POWERPC__
+extern "C" {
+#include <pngdec/pngdec.h>
+#include <pngdec/loadpng.h>
+}
+#else
 #include "pngdatas.h"
 extern "C" int LoadPNG(PngDatas *png, const char *filename);
+#endif
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
@@ -367,7 +374,9 @@ class ViewImage : public View
     if (!attr || !attr->value)
       return;
 
-    png.png_in = GET (attr->value, &png.png_size);
+    size_t sz;
+    png.png_in = GET (attr->value, &sz);
+    png.png_size = sz & 0xffffffff;
 
     if (!png.png_in)
       return;
@@ -465,14 +474,18 @@ class Controller
     for(View *scan = children; scan; scan = scan->next)
       scan->render();
     if (controller->active_link == this)
-      c = 0xff00;
+      c = 0xffff;
     for(int x = -2; x < bw + 2; x++)
     {
+      parent->pset (bx + x, by - 1, c >> 8);
+      parent->pset (bx + x, by + bh + 1, c >> 8);
       parent->pset (bx + x, by - 2, c);
       parent->pset (bx + x, by + bh + 2, c);
     }
     for(int y = -2; y < bh + 2; y++)
     {
+      parent->pset(bx - 1, by + y, c >> 8);
+      parent->pset(bx + bw + 1, by + y, c >> 8);
       parent->pset(bx - 2, by + y, c);
       parent->pset(bx + bw + 2, by + y, c);
     }

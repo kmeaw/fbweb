@@ -18,7 +18,7 @@ sdl.o: sdl.c
 png.o: png.c
 	$(CC) $(CFLAGS) -c $^ -o $@ $(shell pkg-config --cflags libpng)
 
-main.o: main.cpp xml.h view.h
+main.o: main.cpp xml.h view.h get.h
 	$(CXX) $(CXXFLAGS) -c main.cpp -o $@ $(shell pkg-config --cflags freetype2)
 
 test: main
